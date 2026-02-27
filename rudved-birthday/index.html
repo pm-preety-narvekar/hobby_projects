@@ -256,15 +256,48 @@ let raycaster = new THREE.Raycaster();
 let mouse = new THREE.Vector2();
 let particles=[];
 
-function createCake(x,z){
-  let cake = new THREE.Mesh(
-    new THREE.BoxGeometry(6,3,6),
-    new THREE.MeshLambertMaterial({color:"#c68642"})
+function createCake(x, z) {
+  let cakeGroup = new THREE.Group();
+
+  /* CAKE BASE (Brown Sponge) */
+  let base = new THREE.Mesh(
+    new THREE.BoxGeometry(6, 3, 6),
+    new THREE.MeshLambertMaterial({ color: "#b5651d" })
   );
-  cake.position.set(x,3,z);
-  cake.userData.offset = Math.random()*Math.PI*2;
-  scene.add(cake);
-  cakes.push(cake);
+  base.position.y = 1.5;
+  base.userData.parentCake = cakeGroup;  // << link to group
+  cakeGroup.add(base);
+
+  /* ICING TOP (White Layer) */
+  let icing = new THREE.Mesh(
+    new THREE.BoxGeometry(6.2, 1, 6.2),
+    new THREE.MeshLambertMaterial({ color: "#ffffff" })
+  );
+  icing.position.y = 3.5;
+  icing.userData.parentCake = cakeGroup;  // << link to group
+  cakeGroup.add(icing);
+
+  /* RED PIXEL TOPPINGS */
+  for (let i = 0; i < 6; i++) {
+    let cherry = new THREE.Mesh(
+      new THREE.BoxGeometry(0.8, 0.8, 0.8),
+      new THREE.MeshLambertMaterial({ color: "#cc0000" })
+    );
+
+    cherry.position.set(
+      (Math.random() - 0.5) * 4,
+      4.2,
+      (Math.random() - 0.5) * 4
+    );
+    cherry.userData.parentCake = cakeGroup;  // << link to group
+    cakeGroup.add(cherry);
+  }
+
+  cakeGroup.position.set(x, 0, z);
+  cakeGroup.userData.offset = Math.random() * Math.PI * 2;
+
+  scene.add(cakeGroup);
+  cakes.push(cakeGroup);
 }
 
 for(let i=0;i<6;i++){
@@ -292,30 +325,38 @@ function burst(x,y,z,color){
 
 /* TAP HANDLER */
 
-function handleTap(event){
+function handleTap(event) {
 
-  if(event.touches && event.touches.length>1) return;
+  if(event.touches && event.touches.length > 1) return;
 
   let rect = renderer.domElement.getBoundingClientRect();
   let clientX = event.touches ? event.touches[0].clientX : event.clientX;
   let clientY = event.touches ? event.touches[0].clientY : event.clientY;
 
-  mouse.x = ((clientX-rect.left)/rect.width)*2-1;
-  mouse.y = -((clientY-rect.top)/rect.height)*2+1;
+  mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
 
-  raycaster.setFromCamera(mouse,camera);
-  let intersects = raycaster.intersectObjects(cakes);
+  raycaster.setFromCamera(mouse, camera);
 
-  if(intersects.length>0){
-    let cake = intersects[0].object;
-    burst(cake.position.x,10,cake.position.z,0xffff00);
+  // INTERSECT WITH ALL CHILD MESHES OF CAKE GROUPS
+  let intersects = [];
+  cakes.forEach(cakeGroup => {
+    intersects.push(...raycaster.intersectObjects(cakeGroup.children, true));
+  });
+
+  if (intersects.length > 0) {
+    // get the parent cake group
+    const cake = intersects[0].object.userData.parentCake || intersects[0].object;
+    burst(cake.position.x, 10, cake.position.z, 0xffff00);
+
+    // remove cake group
     scene.remove(cake);
-    cakes = cakes.filter(c=>c!==cake);
+    cakes = cakes.filter(c => c !== cake);
 
-    if(cakes.length===0){
-      setTimeout(()=>{
-        document.getElementById("inviteScreen").style.display="flex";
-      },1000);
+    if (cakes.length === 0) {
+      setTimeout(() => {
+        document.getElementById("inviteScreen").style.display = "flex";
+      }, 1000);
     }
   }
 }
