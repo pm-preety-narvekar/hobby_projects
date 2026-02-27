@@ -2,12 +2,23 @@
 <html>
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Rudved's 3D Minecraft Birthday Quest</title>
+
 <style>
-body { margin:0; overflow:hidden; font-family:monospace; }
+html, body {
+  margin:0;
+  padding:0;
+  overflow:hidden;
+  touch-action:none;
+  background:#87CEEB;
+  font-family:monospace;
+}
 
 #inviteScreen {
-  position:absolute;
+  position:fixed;
+  top:0;
+  left:0;
   width:100%;
   height:100%;
   background:rgba(0,0,0,0.95);
@@ -17,34 +28,33 @@ body { margin:0; overflow:hidden; font-family:monospace; }
   align-items:center;
   flex-direction:column;
   text-align:center;
-  z-index:10;
+  z-index:100;
 }
 
-#inviteScreen h1 { font-size:42px; color:#00FFAA; }
-#inviteScreen p { font-size:22px; }
+#inviteScreen h1 { font-size:36px; color:#00FFAA; }
+#inviteScreen p { font-size:20px; }
 
 .button {
   margin-top:20px;
-  padding:15px 30px;
-  font-size:20px;
+  padding:15px 25px;
+  font-size:18px;
   background:#00AAFF;
   border:none;
   color:white;
-  cursor:pointer;
-  border-radius:10px;
+  border-radius:12px;
 }
 
 .touch-btn {
-  position:absolute;
-  width:70px;
-  height:70px;
+  position:fixed;
+  width:80px;
+  height:80px;
   background:rgba(0,0,0,0.6);
   color:white;
   font-size:40px;
   display:flex;
   justify-content:center;
   align-items:center;
-  border-radius:15px;
+  border-radius:20px;
   user-select:none;
 }
 </style>
@@ -71,8 +81,16 @@ scene.background = new THREE.Color(0x87CEEB);
 
 let camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
 let renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
+
+// RESPONSIVE RESIZE
+window.addEventListener("resize", ()=>{
+  camera.aspect = window.innerWidth/window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
 
 // LIGHT
 let light = new THREE.DirectionalLight(0xffffff,1);
@@ -95,14 +113,14 @@ let player = new THREE.Mesh(
 player.position.y = 0.5;
 scene.add(player);
 
-// CAMERA
-camera.position.set(0,10,10);
+// CAMERA START
+camera.position.set(0,8,10);
 camera.lookAt(player.position);
 
 // CAKES
-let blocks = [];
+let blocks=[];
 for(let i=0;i<5;i++){
-  let block = new THREE.Mesh(
+  let block=new THREE.Mesh(
     new THREE.BoxGeometry(1,1,1),
     new THREE.MeshLambertMaterial({color:0xFF69B4})
   );
@@ -115,52 +133,46 @@ for(let i=0;i<5;i++){
   blocks.push(block);
 }
 
-// PORTAL (Glow Animated)
-let portalMaterial = new THREE.MeshBasicMaterial({color:0x00FFFF});
-let portal = new THREE.Mesh(
+// PORTAL
+let portalMat = new THREE.MeshBasicMaterial({color:0x00FFFF});
+let portal=new THREE.Mesh(
   new THREE.BoxGeometry(2,3,0.5),
-  portalMaterial
+  portalMat
 );
 portal.position.set(15,1.5,15);
-portal.visible = false;
+portal.visible=false;
 scene.add(portal);
 
-let moveState = {up:false,down:false,left:false,right:false};
-let speed = 0.15;
-let gameWon = false;
+let moveState={up:false,down:false,left:false,right:false};
+let speed=0.18;
+let gameWon=false;
 
-// KEYBOARD
-document.addEventListener("keydown", e=>{
-  if(e.key==="ArrowUp") moveState.up=true;
-  if(e.key==="ArrowDown") moveState.down=true;
-  if(e.key==="ArrowLeft") moveState.left=true;
-  if(e.key==="ArrowRight") moveState.right=true;
-});
-document.addEventListener("keyup", e=>{
-  if(e.key==="ArrowUp") moveState.up=false;
-  if(e.key==="ArrowDown") moveState.down=false;
-  if(e.key==="ArrowLeft") moveState.left=false;
-  if(e.key==="ArrowRight") moveState.right=false;
-});
-
-// TOUCH BUTTONS
+// TOUCH CONTROLS
 function createBtn(symbol,left,bottom,dir){
   let btn=document.createElement("div");
   btn.className="touch-btn";
   btn.style.left=left+"px";
   btn.style.bottom=bottom+"px";
   btn.innerHTML=symbol;
-  btn.ontouchstart=()=>moveState[dir]=true;
-  btn.ontouchend=()=>moveState[dir]=false;
+
+  btn.addEventListener("touchstart", e=>{
+    e.preventDefault();
+    moveState[dir]=true;
+  });
+
+  btn.addEventListener("touchend", ()=>{
+    moveState[dir]=false;
+  });
+
   document.body.appendChild(btn);
 }
 
-createBtn("⬆",100,160,"up");
-createBtn("⬇",100,60,"down");
-createBtn("⬅",30,110,"left");
-createBtn("➡",170,110,"right");
+createBtn("⬆",110,200,"up");
+createBtn("⬇",110,90,"down");
+createBtn("⬅",30,145,"left");
+createBtn("➡",190,145,"right");
 
-// SOUND
+// SOUND (plays after user interaction)
 let audio = new Audio("https://cdn.pixabay.com/download/audio/2022/03/15/audio_3f5a5d7d44.mp3?filename=success-fanfare-trumpets-6185.mp3");
 
 // CONFETTI
@@ -172,9 +184,9 @@ function startConfetti(){
       new THREE.MeshBasicMaterial({color:Math.random()*0xffffff})
     );
     piece.position.set(
-      (Math.random()-0.5)*10,
-      10,
-      (Math.random()-0.5)*10
+      (Math.random()-0.5)*15,
+      12,
+      (Math.random()-0.5)*15
     );
     piece.userData.speed=Math.random()*0.1+0.05;
     scene.add(piece);
@@ -182,7 +194,7 @@ function startConfetti(){
   }
 }
 
-// UPDATE
+// UPDATE LOOP
 function update(){
   if(gameWon) return;
 
@@ -191,16 +203,17 @@ function update(){
   if(moveState.left) player.position.x -= speed;
   if(moveState.right) player.position.x += speed;
 
-  // LIMIT BOUNDARY
-  player.position.x = Math.max(-24, Math.min(24, player.position.x));
-  player.position.z = Math.max(-24, Math.min(24, player.position.z));
+  // BOUNDARY LIMIT
+  player.position.x=Math.max(-24,Math.min(24,player.position.x));
+  player.position.z=Math.max(-24,Math.min(24,player.position.z));
 
-  camera.position.x = player.position.x;
-  camera.position.z = player.position.z + 10;
+  // SMOOTH CAMERA FOLLOW
+  camera.position.x += (player.position.x - camera.position.x)*0.1;
+  camera.position.z += ((player.position.z+10) - camera.position.z)*0.1;
   camera.lookAt(player.position);
 
-  blocks = blocks.filter(block=>{
-    if(player.position.distanceTo(block.position)<1.8){
+  blocks=blocks.filter(block=>{
+    if(player.position.distanceTo(block.position)<2){
       scene.remove(block);
       return false;
     }
@@ -209,9 +222,8 @@ function update(){
 
   if(blocks.length===0){
     portal.visible=true;
-    // Glow animation
-    portal.scale.x = 1 + Math.sin(Date.now()*0.005)*0.2;
-    portal.scale.y = 1 + Math.sin(Date.now()*0.005)*0.2;
+    let glow=1+Math.sin(Date.now()*0.005)*0.25;
+    portal.scale.set(glow,glow,1);
   }
 
   if(portal.visible && player.position.distanceTo(portal.position)<3){
