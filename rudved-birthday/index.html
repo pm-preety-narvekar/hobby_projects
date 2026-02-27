@@ -1,332 +1,115 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Rudved's Minecraft Birthday Quest</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-
-<style>
-html,body{
-  margin:0;
-  padding:0;
-  overflow:hidden;
-  background:#87CEEB;
-  font-family:'Press Start 2P', cursive;
-}
-
-/* CENTERED TITLE AREA */
-
-#uiContainer{
-  position:fixed;
-  top:10px;
-  width:100%;
-  text-align:center;
-  z-index:100;
-  pointer-events:none;
-}
-
-#gameTitle{
-  background:#000;
-  color:#00ffcc;
-  padding:10px;
-  font-size:14px;
-  display:inline-block;
-}
-
-#instructions{
-  background:rgba(0,0,0,0.85);
-  color:white;
-  padding:6px;
-  font-size:10px;
-  margin-top:5px;
-  display:inline-block;
-}
-
-#inviteScreen{
-  position:fixed;
-  top:0;
-  left:0;
-  width:100%;
-  height:100%;
-  background:rgba(0,0,0,0.95);
-  color:white;
-  display:none;
-  justify-content:center;
-  align-items:center;
-  flex-direction:column;
-  text-align:center;
-  z-index:200;
-}
-</style>
-</head>
-<body>
-
-<div id="uiContainer">
-  <div id="gameTitle">🎮 RUDVED'S MINECRAFT BIRTHDAY QUEST 🎮</div><br>
-  <div id="instructions">🎂 Tap All Jumping Cakes To Unlock Invitation!</div>
-</div>
-
-<div id="inviteScreen">
-<h2>🎉 YOU'RE INVITED 🎉</h2>
-<h1>Rudved's 8th Birthday!</h1>
-<p>
-🗓 Saturday, 7th March<br><br>
-⏰ 11:00 AM<br><br>
-🎮 Minecraft Fun Party
-</p>
-</div>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/controls/OrbitControls.js"></script>
-
 <script>
 
 /* SCENE */
 
-let scene=new THREE.Scene();
-scene.background=new THREE.Color(0x87CEEB);
+let scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87CEEB);
 
-let renderer=new THREE.WebGLRenderer({antialias:true});
-renderer.setSize(window.innerWidth,window.innerHeight);
-renderer.shadowMap.enabled=true;
+let renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.setPixelRatio(window.devicePixelRatio);
 document.body.appendChild(renderer.domElement);
 
-let camera=new THREE.PerspectiveCamera(60,window.innerWidth/window.innerHeight,0.1,1000);
+/* IMPORTANT: allow browser gestures */
+renderer.domElement.style.touchAction = "auto";
 
-/* PERFECT FIRST LOAD VIEW */
-camera.position.set(0,60,130);
-camera.lookAt(0,0,0);
+let camera = new THREE.PerspectiveCamera(
+  60,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  1000
+);
 
-/* CONTROLS (MOBILE SAFE) */
+/* GOOD DEFAULT ZOOM LEVEL */
+camera.position.set(0, 70, 140);
+camera.lookAt(0, 0, 0);
 
-let controls=new THREE.OrbitControls(camera,renderer.domElement);
-controls.enableDamping=true;
-controls.dampingFactor=0.08;
-controls.enablePan=true;
-controls.enableZoom=true;
-controls.enableRotate=true;
-controls.minDistance=60;
-controls.maxDistance=220;
-controls.maxPolarAngle=Math.PI/2.05;
+/* CONTROLS (PROPER MOBILE CONFIG) */
 
-/* RESIZE */
+let controls = new THREE.OrbitControls(camera, renderer.domElement);
 
-window.addEventListener("resize",()=>{
-camera.aspect=window.innerWidth/window.innerHeight;
-camera.updateProjectionMatrix();
-renderer.setSize(window.innerWidth,window.innerHeight);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+
+controls.enableRotate = true;
+controls.enableZoom = true;
+controls.enablePan = true;
+
+controls.minDistance = 60;
+controls.maxDistance = 250;
+controls.maxPolarAngle = Math.PI / 2.05;
+
+controls.zoomSpeed = 1.2;
+controls.rotateSpeed = 0.6;
+controls.panSpeed = 0.6;
+
+/* RESIZE FIX */
+
+window.addEventListener("resize", () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-/* LIGHTING */
+/* RAYCASTER */
 
-scene.add(new THREE.AmbientLight(0xffffff,0.7));
+let raycaster = new THREE.Raycaster();
+let mouse = new THREE.Vector2();
 
-let sun=new THREE.DirectionalLight(0xffffff,1);
-sun.position.set(80,120,80);
-sun.castShadow=true;
-scene.add(sun);
+/* SAFE TAP HANDLER */
 
-/* TEXTURED GRASS */
+function handleTap(event) {
 
-let canvas=document.createElement("canvas");
-canvas.width=64;
-canvas.height=64;
-let ctx=canvas.getContext("2d");
+  // Prevent only when single tap (not pinch)
+  if (event.touches && event.touches.length > 1) return;
 
-for(let y=0;y<8;y++){
-for(let x=0;x<8;x++){
-ctx.fillStyle=(Math.random()>0.5)?"#2ecc40":"#1e8c2f";
-ctx.fillRect(x*8,y*8,8,8);
-}
-}
+  let rect = renderer.domElement.getBoundingClientRect();
 
-let grassTexture=new THREE.CanvasTexture(canvas);
-grassTexture.wrapS=THREE.RepeatWrapping;
-grassTexture.wrapT=THREE.RepeatWrapping;
-grassTexture.repeat.set(30,30);
-grassTexture.magFilter=THREE.NearestFilter;
+  let clientX = event.touches ? event.touches[0].clientX : event.clientX;
+  let clientY = event.touches ? event.touches[0].clientY : event.clientY;
 
-let ground=new THREE.Mesh(
-new THREE.BoxGeometry(180,10,180),
-[
-new THREE.MeshLambertMaterial({color:"#5a3d1e"}),
-new THREE.MeshLambertMaterial({color:"#5a3d1e"}),
-new THREE.MeshLambertMaterial({map:grassTexture}),
-new THREE.MeshLambertMaterial({color:"#5a3d1e"}),
-new THREE.MeshLambertMaterial({color:"#5a3d1e"}),
-new THREE.MeshLambertMaterial({color:"#5a3d1e"})
-]
-);
-ground.position.y=-5;
-ground.receiveShadow=true;
-scene.add(ground);
+  mouse.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+  mouse.y = -((clientY - rect.top) / rect.height) * 2 + 1;
 
-/* TREES (MORE INSIDE + EDGES) */
+  raycaster.setFromCamera(mouse, camera);
 
-function createTree(x,z){
+  let intersects = raycaster.intersectObjects(cakes, true);
 
-let trunk=new THREE.Mesh(
-new THREE.BoxGeometry(3,8,3),
-new THREE.MeshLambertMaterial({color:"#8B4513"})
-);
-trunk.position.set(x,4,z);
-trunk.castShadow=true;
-scene.add(trunk);
+  if (intersects.length > 0) {
 
-for(let y=0;y<3;y++){
-for(let i=-1;i<=1;i++){
-for(let j=-1;j<=1;j++){
-if(Math.random()>0.2){
-let leaf=new THREE.Mesh(
-new THREE.BoxGeometry(4,4,4),
-new THREE.MeshLambertMaterial({color:"#1e8c2f"})
-);
-leaf.position.set(x+i*4,12+y*4,z+j*4);
-leaf.castShadow=true;
-scene.add(leaf);
-}
-}
-}
-}
+    let obj = intersects[0].object;
+
+    while (obj.parent && !cakes.includes(obj)) {
+      obj = obj.parent;
+    }
+
+    burst(obj.position.x, 10, obj.position.z, 0xffff00);
+
+    scene.remove(obj);
+    cakes = cakes.filter(c => c !== obj);
+
+    if (cakes.length === 0) {
+      setTimeout(() => {
+        document.getElementById("inviteScreen").style.display = "flex";
+      }, 1000);
+    }
+  }
 }
 
-/* Scatter trees everywhere */
+/* IMPORTANT: passive:false REQUIRED FOR MOBILE */
 
-for(let i=0;i<40;i++){
-let x=(Math.random()-0.5)*160;
-let z=(Math.random()-0.5)*160;
-if(Math.abs(x)<25 && Math.abs(z)<25) continue;
-createTree(x,z);
-}
+renderer.domElement.addEventListener("touchstart", handleTap, { passive: true });
+renderer.domElement.addEventListener("click", handleTap);
 
-/* CAKES WITH JUMP */
+/* ANIMATION LOOP */
 
-let cakes=[];
-let raycaster=new THREE.Raycaster();
-let mouse=new THREE.Vector2();
-let particles=[];
-
-function createCake(x,z){
-
-let group=new THREE.Group();
-
-let base=new THREE.Mesh(
-new THREE.BoxGeometry(5,2,5),
-new THREE.MeshLambertMaterial({color:"#c68642"})
-);
-base.position.y=1;
-group.add(base);
-
-let icing=new THREE.Mesh(
-new THREE.BoxGeometry(5.2,1,5.2),
-new THREE.MeshLambertMaterial({color:"#ffffff"})
-);
-icing.position.y=2.5;
-group.add(icing);
-
-group.position.set(x,0,z);
-group.userData.jumpOffset=Math.random()*Math.PI*2;
-
-scene.add(group);
-cakes.push(group);
-}
-
-for(let i=0;i<6;i++){
-createCake((Math.random()-0.5)*60,(Math.random()-0.5)*60);
-}
-
-/* FIREWORK */
-
-function burst(x,y,z,color){
-for(let i=0;i<50;i++){
-let cube=new THREE.Mesh(
-new THREE.BoxGeometry(0.6,0.6,0.6),
-new THREE.MeshBasicMaterial({color:color})
-);
-cube.position.set(x,y,z);
-cube.userData.velocity=new THREE.Vector3(
-(Math.random()-0.5)*1.5,
-Math.random()*2,
-(Math.random()-0.5)*1.5
-);
-scene.add(cube);
-particles.push(cube);
-}
-}
-
-/* TAP */
-
-function onTap(event){
-
-let rect=renderer.domElement.getBoundingClientRect();
-let clientX=event.touches?event.touches[0].clientX:event.clientX;
-let clientY=event.touches?event.touches[0].clientY:event.clientY;
-
-mouse.x=((clientX-rect.left)/rect.width)*2-1;
-mouse.y=-((clientY-rect.top)/rect.height)*2+1;
-
-raycaster.setFromCamera(mouse,camera);
-let intersects=raycaster.intersectObjects(cakes,true);
-
-if(intersects.length>0){
-
-let obj=intersects[0].object;
-while(obj.parent && !cakes.includes(obj)){
-obj=obj.parent;
-}
-
-burst(obj.position.x,8,obj.position.z,0xffff00);
-scene.remove(obj);
-cakes=cakes.filter(c=>c!==obj);
-
-if(cakes.length===0){
-setTimeout(()=>{
-burst(0,40,0,0xff0000);
-burst(0,40,0,0x00ff00);
-burst(0,40,0,0x0000ff);
-setTimeout(()=>{
-document.getElementById("inviteScreen").style.display="flex";
-},2000);
-},500);
-}
-}
-}
-
-renderer.domElement.addEventListener("click",onTap);
-renderer.domElement.addEventListener("touchstart",onTap);
-
-/* ANIMATION */
-
-let clock=new THREE.Clock();
-
-function animate(){
-requestAnimationFrame(animate);
-
-let time=clock.getElapsedTime();
-
-/* Jumping cakes */
-cakes.forEach(c=>{
-c.position.y=Math.abs(Math.sin(time*2 + c.userData.jumpOffset))*6;
-});
-
-/* Particles */
-particles.forEach((p,i)=>{
-p.position.add(p.userData.velocity);
-p.userData.velocity.y-=0.05;
-if(p.position.y<0){
-scene.remove(p);
-particles.splice(i,1);
-}
-});
-
-controls.update();
-renderer.render(scene,camera);
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
 }
 
 animate();
 
 </script>
-</body>
-</html>
