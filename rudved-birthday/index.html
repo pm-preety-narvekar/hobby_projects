@@ -57,6 +57,19 @@ html,body{
   flex-direction:column;
   text-align:center;
   z-index:200;
+  padding:0 20px; /* LEFT & RIGHT MARGIN */
+  box-sizing:border-box;
+}
+
+#inviteCard{
+  background:#111;
+  padding:30px 20px;
+  border:4px solid #00ffcc;
+  max-width:500px;
+  width:100%;
+  text-align:center;
+  color:white;
+  box-shadow:0 0 20px #00ffcc;
 }
 </style>
 </head>
@@ -68,6 +81,7 @@ html,body{
 </div>
 
 <div id="inviteScreen">
+  <div id="inviteCard">
 <h2>🎉 YOU'RE INVITED 🎉</h2>
 <h1>Rudved's 8th Birthday!</h1>
 <p>
@@ -75,6 +89,7 @@ html,body{
 ⏰ 11:00 AM<br><br>
 🎮 Minecraft Fun Party
 </p>
+</div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
