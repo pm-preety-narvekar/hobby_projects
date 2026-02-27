@@ -43,6 +43,23 @@ html,body{
   display:inline-block;
 }
 
+/* Cake status icons */
+#cakeStatusImages {
+  display:flex;
+  justify-content:center;
+  gap:10px;
+  margin-top:6px;
+  pointer-events:none;
+}
+.cakeIcon {
+  width: 32px;
+  height: 32px;
+  transition: transform 0.2s;
+}
+.cakeIcon.filled {
+  transform: scale(1.2);
+}
+
 #inviteScreen{
   position:fixed;
   top:0;
@@ -61,36 +78,16 @@ html,body{
   box-sizing:border-box;
 }
 
-/*#inviteScreen{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.95);
-  display:none;
-
-  // PERFECT CENTERING
-  display:flex;
-  justify-content:center;
-  align-items:center;
-
-  z-index:200;
-}*/
-
 #inviteCard{
   background:#111;
   border:4px solid #00ffcc;
   box-shadow:0 0 25px #00ffcc;
-
   padding:10px 10px;
   width:80%;
   max-width:500px;
-
   text-align:center;
   color:white;
-
-  /* prevents edge sticking on very small screens */
   margin:20px;
-
-  /* smooth pop look */
   transform:scale(1);
 }
 </style>
@@ -100,7 +97,17 @@ html,body{
 <div id="uiContainer">
   <div id="gameTitle">🎮 RUDVED'S MINECRAFT BIRTHDAY QUEST 🎮</div><br>
   <div id="instructions">🎂 Tap All Jumping Cakes To Unlock Invitation!</div>
+
+  <!-- Cake status icons -->
+  <div id="cakeStatusImages">
+    <img src="cake_disabled.png" class="cakeIcon">
+    <img src="cake_disabled.png" class="cakeIcon">
+    <img src="cake_disabled.png" class="cakeIcon">
+    <img src="cake_disabled.png" class="cakeIcon">
+    <img src="cake_disabled.png" class="cakeIcon">
+  </div>
 </div>
+
 <div id="startOverlay" style="
   position:fixed;
   inset:0;
@@ -268,6 +275,9 @@ for(let i=0;i<40;i++){
 /* CAKES */
 
 let cakes=[];
+let totalCakes = 5;           // number of cakes for icons
+let collectedCakes = 0;
+const cakeIcons = document.querySelectorAll("#cakeStatusImages .cakeIcon");
 let raycaster = new THREE.Raycaster();
 let mouse = new THREE.Vector2();
 let particles=[];
@@ -281,7 +291,7 @@ function createCake(x, z) {
     new THREE.MeshLambertMaterial({ color: "#b5651d" })
   );
   base.position.y = 1.5;
-  base.userData.parentCake = cakeGroup;  // << link to group
+  base.userData.parentCake = cakeGroup;  
   cakeGroup.add(base);
 
   /* ICING TOP (White Layer) */
@@ -290,7 +300,7 @@ function createCake(x, z) {
     new THREE.MeshLambertMaterial({ color: "#ffffff" })
   );
   icing.position.y = 3.5;
-  icing.userData.parentCake = cakeGroup;  // << link to group
+  icing.userData.parentCake = cakeGroup;  
   cakeGroup.add(icing);
 
   /* RED PIXEL TOPPINGS */
@@ -299,13 +309,12 @@ function createCake(x, z) {
       new THREE.BoxGeometry(0.8, 0.8, 0.8),
       new THREE.MeshLambertMaterial({ color: "#cc0000" })
     );
-
     cherry.position.set(
       (Math.random() - 0.5) * 4,
       4.2,
       (Math.random() - 0.5) * 4
     );
-    cherry.userData.parentCake = cakeGroup;  // << link to group
+    cherry.userData.parentCake = cakeGroup;  
     cakeGroup.add(cherry);
   }
 
@@ -316,7 +325,7 @@ function createCake(x, z) {
   cakes.push(cakeGroup);
 }
 
-for(let i=0;i<6;i++){
+for(let i=0;i<totalCakes;i++){
   createCake((Math.random()-0.5)*80,(Math.random()-0.5)*80);
 }
 
@@ -361,13 +370,19 @@ function handleTap(event) {
   });
 
   if (intersects.length > 0) {
-    // get the parent cake group
     const cake = intersects[0].object.userData.parentCake || intersects[0].object;
     burst(cake.position.x, 10, cake.position.z, 0xffff00);
 
     // remove cake group
     scene.remove(cake);
     cakes = cakes.filter(c => c !== cake);
+
+    // Update cake icons
+    if(collectedCakes < totalCakes){
+      cakeIcons[collectedCakes].src = "cake_enabled.png";
+      cakeIcons[collectedCakes].classList.add("filled");
+    }
+    collectedCakes++;
 
     if (cakes.length === 0) {
       setTimeout(() => {
@@ -410,7 +425,7 @@ animate();
 
 // PLAY MUSIC
 const bgMusic = document.getElementById("bgMusic");
-bgMusic.volume = 0.5; // optional
+bgMusic.volume = 0.5;
 
 document.getElementById("startOverlay").addEventListener("click", () => {
   bgMusic.play().then(() => {
@@ -419,11 +434,9 @@ document.getElementById("startOverlay").addEventListener("click", () => {
     console.log("Music play blocked:", e);
   });
 
-  // hide overlay
   document.getElementById("startOverlay").style.display = "none";
 
-  // now the game can start running
-  animate(); // if your animate loop was paused
+  animate(); 
 });
 
 </script>
