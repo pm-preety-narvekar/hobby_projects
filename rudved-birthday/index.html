@@ -57,19 +57,41 @@ html,body{
   flex-direction:column;
   text-align:center;
   z-index:200;
-  padding:0 20px; /* LEFT & RIGHT MARGIN */
+  padding:0 20px; 
   box-sizing:border-box;
 }
 
+/*#inviteScreen{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.95);
+  display:none;
+
+  // PERFECT CENTERING
+  display:flex;
+  justify-content:center;
+  align-items:center;
+
+  z-index:200;
+}*/
+
 #inviteCard{
   background:#111;
-  padding:30px 20px;
   border:4px solid #00ffcc;
+  box-shadow:0 0 25px #00ffcc;
+
+  padding:10px 10px;
+  width:80%;
   max-width:500px;
-  width:100%;
+
   text-align:center;
   color:white;
-  box-shadow:0 0 20px #00ffcc;
+
+  /* prevents edge sticking on very small screens */
+  margin:20px;
+
+  /* smooth pop look */
+  transform:scale(1);
 }
 </style>
 </head>
@@ -82,8 +104,8 @@ html,body{
 
 <div id="inviteScreen">
   <div id="inviteCard">
-<h2>🎉 YOU'RE INVITED 🎉</h2>
-<h1>Rudved's 8th Birthday!</h1>
+<h3>🎉 YOU ARE 🎉 <br> 🎉 INVITED 🎉</h3>
+<h2>Rudved's <br><br>8th<br><br> Birthday!<br></h2>
 <p>
 🗓 Saturday, 7th March<br><br>
 ⏰ 11:00 AM<br><br>
