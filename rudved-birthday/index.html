@@ -101,6 +101,21 @@ html,body{
   <div id="gameTitle">🎮 RUDVED'S MINECRAFT BIRTHDAY QUEST 🎮</div><br>
   <div id="instructions">🎂 Tap All Jumping Cakes To Unlock Invitation!</div>
 </div>
+<div id="startOverlay" style="
+  position:fixed;
+  inset:0;
+  background:#000;
+  color:#00ffcc;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-family:'Press Start 2P', cursive;
+  font-size:14px;
+  z-index:500;
+  cursor:pointer;
+">
+  🎮 TAP TO START THE GAME 🎮
+</div>
 
 <div id="inviteScreen">
   <div id="inviteCard">
@@ -113,6 +128,7 @@ html,body{
 </p>
 </div>
 </div>
+<audio id="bgMusic" src="background.mp3" loop preload="auto"></audio>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/controls/OrbitControls.js"></script>
@@ -391,6 +407,24 @@ function animate(){
 }
 
 animate();
+
+// PLAY MUSIC
+const bgMusic = document.getElementById("bgMusic");
+bgMusic.volume = 0.5; // optional
+
+document.getElementById("startOverlay").addEventListener("click", () => {
+  bgMusic.play().then(() => {
+    console.log("Music started successfully");
+  }).catch(e => {
+    console.log("Music play blocked:", e);
+  });
+
+  // hide overlay
+  document.getElementById("startOverlay").style.display = "none";
+
+  // now the game can start running
+  animate(); // if your animate loop was paused
+});
 
 </script>
 </body>
