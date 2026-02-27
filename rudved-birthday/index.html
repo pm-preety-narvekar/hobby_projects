@@ -2,13 +2,14 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Rudved's Minecraft Birthday Quest</title>
+<title>Rudved's 3D Minecraft Birthday Quest</title>
 <style>
-body { margin:0; overflow:hidden; background:#87CEEB; font-family:monospace; }
-canvas { display:block; }
+body { margin:0; overflow:hidden; font-family:monospace; }
+
 #inviteScreen {
   position:absolute;
-  width:100%; height:100%;
+  width:100%;
+  height:100%;
   background:rgba(0,0,0,0.95);
   color:white;
   display:none;
@@ -16,10 +17,12 @@ canvas { display:block; }
   align-items:center;
   flex-direction:column;
   text-align:center;
-  padding:20px;
+  z-index:10;
 }
+
 #inviteScreen h1 { font-size:42px; color:#00FFAA; }
 #inviteScreen p { font-size:22px; }
+
 .button {
   margin-top:20px;
   padding:15px 30px;
@@ -28,34 +31,28 @@ canvas { display:block; }
   border:none;
   color:white;
   cursor:pointer;
+  border-radius:10px;
 }
-.controls {
+
+.touch-btn {
   position:absolute;
-  bottom:20px;
-  left:50%;
-  transform:translateX(-50%);
-  display:flex;
-  gap:10px;
-}
-.control-btn {
-  width:60px; height:60px;
-  background:#333;
+  width:70px;
+  height:70px;
+  background:rgba(0,0,0,0.6);
   color:white;
-  font-size:30px;
+  font-size:40px;
   display:flex;
   justify-content:center;
   align-items:center;
-  border-radius:10px;
+  border-radius:15px;
+  user-select:none;
 }
 </style>
 </head>
 <body>
 
-<canvas id="game"></canvas>
-<canvas id="confetti"></canvas>
-
 <div id="inviteScreen">
-  <h1>🎉 YOU UNLOCKED THE PORTAL! 🎉</h1>
+  <h1>🎉 PORTAL UNLOCKED! 🎉</h1>
   <h2>You're Invited to</h2>
   <h1>Rudved's 8th Birthday!</h1>
   <p>
@@ -66,138 +63,176 @@ canvas { display:block; }
   <button class="button" onclick="location.reload()">Play Again</button>
 </div>
 
-<div class="controls">
-  <div class="control-btn" onclick="move('left')">⬅</div>
-  <div class="control-btn" onclick="move('up')">⬆</div>
-  <div class="control-btn" onclick="move('down')">⬇</div>
-  <div class="control-btn" onclick="move('right')">➡</div>
-</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <script>
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
+let scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87CEEB);
 
-const confettiCanvas = document.getElementById("confetti");
-const confettiCtx = confettiCanvas.getContext("2d");
+let camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+let renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
 
-canvas.width = confettiCanvas.width = window.innerWidth;
-canvas.height = confettiCanvas.height = window.innerHeight;
+// LIGHT
+let light = new THREE.DirectionalLight(0xffffff,1);
+light.position.set(10,20,10);
+scene.add(light);
 
-let player = { x:100, y:100, size:40 };
+// GROUND
+let ground = new THREE.Mesh(
+  new THREE.BoxGeometry(50,1,50),
+  new THREE.MeshLambertMaterial({color:0x3CB043})
+);
+ground.position.y = -0.5;
+scene.add(ground);
+
+// PLAYER
+let player = new THREE.Mesh(
+  new THREE.BoxGeometry(1,1,1),
+  new THREE.MeshLambertMaterial({color:0x8B4513})
+);
+player.position.y = 0.5;
+scene.add(player);
+
+// CAMERA
+camera.position.set(0,10,10);
+camera.lookAt(player.position);
+
+// CAKES
 let blocks = [];
-let portal = { x: canvas.width-120, y: canvas.height-120, size:60 };
-let totalBlocks = 5;
-
-for(let i=0;i<totalBlocks;i++){
-  blocks.push({
-    x: Math.random()*(canvas.width-100),
-    y: Math.random()*(canvas.height-200),
-    size:40
-  });
+for(let i=0;i<5;i++){
+  let block = new THREE.Mesh(
+    new THREE.BoxGeometry(1,1,1),
+    new THREE.MeshLambertMaterial({color:0xFF69B4})
+  );
+  block.position.set(
+    (Math.random()-0.5)*30,
+    0.5,
+    (Math.random()-0.5)*30
+  );
+  scene.add(block);
+  blocks.push(block);
 }
 
-let keys = {};
+// PORTAL (Glow Animated)
+let portalMaterial = new THREE.MeshBasicMaterial({color:0x00FFFF});
+let portal = new THREE.Mesh(
+  new THREE.BoxGeometry(2,3,0.5),
+  portalMaterial
+);
+portal.position.set(15,1.5,15);
+portal.visible = false;
+scene.add(portal);
+
+let moveState = {up:false,down:false,left:false,right:false};
+let speed = 0.15;
 let gameWon = false;
-let confettiPieces = [];
 
-document.addEventListener("keydown", e => keys[e.key]=true);
-document.addEventListener("keyup", e => keys[e.key]=false);
+// KEYBOARD
+document.addEventListener("keydown", e=>{
+  if(e.key==="ArrowUp") moveState.up=true;
+  if(e.key==="ArrowDown") moveState.down=true;
+  if(e.key==="ArrowLeft") moveState.left=true;
+  if(e.key==="ArrowRight") moveState.right=true;
+});
+document.addEventListener("keyup", e=>{
+  if(e.key==="ArrowUp") moveState.up=false;
+  if(e.key==="ArrowDown") moveState.down=false;
+  if(e.key==="ArrowLeft") moveState.left=false;
+  if(e.key==="ArrowRight") moveState.right=false;
+});
 
-function move(dir){
-  if(dir==="up") player.y-=40;
-  if(dir==="down") player.y+=40;
-  if(dir==="left") player.x-=40;
-  if(dir==="right") player.x+=40;
+// TOUCH BUTTONS
+function createBtn(symbol,left,bottom,dir){
+  let btn=document.createElement("div");
+  btn.className="touch-btn";
+  btn.style.left=left+"px";
+  btn.style.bottom=bottom+"px";
+  btn.innerHTML=symbol;
+  btn.ontouchstart=()=>moveState[dir]=true;
+  btn.ontouchend=()=>moveState[dir]=false;
+  document.body.appendChild(btn);
 }
 
+createBtn("⬆",100,160,"up");
+createBtn("⬇",100,60,"down");
+createBtn("⬅",30,110,"left");
+createBtn("➡",170,110,"right");
+
+// SOUND
+let audio = new Audio("https://cdn.pixabay.com/download/audio/2022/03/15/audio_3f5a5d7d44.mp3?filename=success-fanfare-trumpets-6185.mp3");
+
+// CONFETTI
+let confetti=[];
 function startConfetti(){
   for(let i=0;i<200;i++){
-    confettiPieces.push({
-      x: Math.random()*canvas.width,
-      y: Math.random()*canvas.height - canvas.height,
-      size: Math.random()*8+4,
-      speed: Math.random()*3+2,
-      color: `hsl(${Math.random()*360},100%,50%)`
-    });
+    let piece=new THREE.Mesh(
+      new THREE.BoxGeometry(0.2,0.2,0.2),
+      new THREE.MeshBasicMaterial({color:Math.random()*0xffffff})
+    );
+    piece.position.set(
+      (Math.random()-0.5)*10,
+      10,
+      (Math.random()-0.5)*10
+    );
+    piece.userData.speed=Math.random()*0.1+0.05;
+    scene.add(piece);
+    confetti.push(piece);
   }
 }
 
-function updateConfetti(){
-  confettiCtx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
-  confettiPieces.forEach(p=>{
-    p.y += p.speed;
-    if(p.y > canvas.height) p.y = -10;
-    confettiCtx.fillStyle = p.color;
-    confettiCtx.fillRect(p.x,p.y,p.size,p.size);
-  });
-  if(gameWon) requestAnimationFrame(updateConfetti);
-}
-
+// UPDATE
 function update(){
   if(gameWon) return;
 
-  if(keys["ArrowUp"]) move("up");
-  if(keys["ArrowDown"]) move("down");
-  if(keys["ArrowLeft"]) move("left");
-  if(keys["ArrowRight"]) move("right");
+  if(moveState.up) player.position.z -= speed;
+  if(moveState.down) player.position.z += speed;
+  if(moveState.left) player.position.x -= speed;
+  if(moveState.right) player.position.x += speed;
 
-  blocks = blocks.filter(b=>{
-    return !(Math.abs(player.x-b.x)<40 && Math.abs(player.y-b.y)<40);
+  // LIMIT BOUNDARY
+  player.position.x = Math.max(-24, Math.min(24, player.position.x));
+  player.position.z = Math.max(-24, Math.min(24, player.position.z));
+
+  camera.position.x = player.position.x;
+  camera.position.z = player.position.z + 10;
+  camera.lookAt(player.position);
+
+  blocks = blocks.filter(block=>{
+    if(player.position.distanceTo(block.position)<1.8){
+      scene.remove(block);
+      return false;
+    }
+    return true;
   });
 
   if(blocks.length===0){
-    if(Math.abs(player.x-portal.x)<50 && Math.abs(player.y-portal.y)<50){
-      gameWon = true;
-      document.getElementById("inviteScreen").style.display="flex";
-      startConfetti();
-      updateConfetti();
-    }
+    portal.visible=true;
+    // Glow animation
+    portal.scale.x = 1 + Math.sin(Date.now()*0.005)*0.2;
+    portal.scale.y = 1 + Math.sin(Date.now()*0.005)*0.2;
+  }
+
+  if(portal.visible && player.position.distanceTo(portal.position)<3){
+    gameWon=true;
+    startConfetti();
+    audio.play();
+    document.getElementById("inviteScreen").style.display="flex";
   }
 }
 
-function drawBlock(x,y,size,color){
-  ctx.fillStyle=color;
-  ctx.fillRect(x,y,size,size);
-  ctx.strokeStyle="#000";
-  ctx.strokeRect(x,y,size,size);
-}
-
-function draw(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-
-  for(let x=0;x<canvas.width;x+=40){
-    for(let y=canvas.height-200;y<canvas.height;y+=40){
-      drawBlock(x,y,40,"#3CB043");
-    }
-  }
-
-  drawBlock(player.x,player.y,player.size,"#8B4513");
-
-  blocks.forEach(b=>{
-    drawBlock(b.x,b.y,b.size,"#FF69B4");
-  });
-
-  if(blocks.length===0){
-    drawBlock(portal.x,portal.y,portal.size,"#00FFFF");
-  }
-
-  ctx.fillStyle="black";
-  ctx.font="20px monospace";
-  ctx.fillText("Collect all Birthday Blocks!",20,30);
-  ctx.fillText("Blocks Left: "+blocks.length,20,60);
-
-  if(blocks.length===0){
-    ctx.fillText("Go to the Diamond Portal!",20,90);
-  }
-}
-
-function gameLoop(){
+function animate(){
+  requestAnimationFrame(animate);
   update();
-  draw();
-  requestAnimationFrame(gameLoop);
-}
 
-gameLoop();
+  confetti.forEach(p=>{
+    p.position.y -= p.userData.speed;
+  });
+
+  renderer.render(scene,camera);
+}
+animate();
 </script>
 
 </body>
