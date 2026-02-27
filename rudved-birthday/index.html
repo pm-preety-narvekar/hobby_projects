@@ -88,7 +88,8 @@ html,body{
   text-align:center;
   color:white;
   margin:20px;
-  transform:scale(1);
+  /*transform:scale(0.2);*/
+  opacity: 0;
 }
 
 /* Set font for <p> */
@@ -96,6 +97,42 @@ p {
   font-family: 'Press Start 2P', cursive;
   font-size: 10px;
 }
+
+/* Minecraft Pop Animation */
+@keyframes minecraftPop {
+  0% {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  80% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes glowPulse {
+  0% { box-shadow: 0 0 15px #00ffcc; }
+  50% { box-shadow: 0 0 40px #00ffcc; }
+  100% { box-shadow: 0 0 15px #00ffcc; }
+}
+
+/* Pop animation (runs once) */
+#inviteCard.show {
+  animation: minecraftPop 0.6s ease-out forwards,
+             glowPulse 1.5s ease-in-out infinite 0.6s;
+}
+
+/* Add glow separately so it doesn't reset transform */
+/*#inviteCard.glow {
+  animation: glowPulse 1.5s ease-in-out infinite;
+}*/
 </style>
 </head>
 <body>
@@ -141,7 +178,7 @@ p {
 <p><br>
 🗓 Saturday, 7th March<br><br>
 ⏰ 11:00 AM<br><br>
-<br><br> @LED Game Zone, <br><br> Westend mall, Aundh, Pune
+<br><br> @LED Game Zone, <br><br> Westend mall, Aundh, Pune <br><br>
 </p>
 </div>
 </div>
@@ -387,8 +424,21 @@ function handleTap(event) {
 
     if(cakes.length===0){
       firecrackerShow(()=> {
-        document.getElementById("inviteScreen").style.display="flex";
-      });
+    const inviteScreen = document.getElementById("inviteScreen");
+    const inviteCard = document.getElementById("inviteCard");
+
+    inviteScreen.style.display = "flex";
+
+    setTimeout(()=>{
+      inviteCard.classList.add("show");
+
+      // Add glow AFTER pop animation completes
+      setTimeout(()=>{
+        inviteCard.classList.add("glow");
+      }, 600);
+
+    }, 50);
+  });
     }
   }
 }
